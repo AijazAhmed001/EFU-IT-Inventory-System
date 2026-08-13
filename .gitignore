@@ -1,0 +1,25 @@
+# IDE and repository-local state
+.vs/
+.vscode/*.local.json
+
+# Local secrets
+.env
+*.local
+
+# .NET outputs
+**/bin/
+**/obj/
+
+# Frontend outputs and dependencies
+**/node_modules/
+frontend/dist/
+frontend/output/
+frontend/tmp/
+
+# Runtime artifacts
+*.log
+*.pid
+
+# Operating-system files
+.DS_Store
+Thumbs.db
