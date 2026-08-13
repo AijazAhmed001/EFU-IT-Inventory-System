@@ -10,6 +10,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Permission> Permissions => Set<Permission>();
     public DbSet<UserRole> UserRoles => Set<UserRole>();
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
+    public DbSet<UserPermission> UserPermissions => Set<UserPermission>();
+    public DbSet<PermissionHistory> PermissionHistories => Set<PermissionHistory>();
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
@@ -54,13 +56,23 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         b.Entity<Permission>().ToTable("Permissions");
         b.Entity<UserRole>().ToTable("UserRoles");
         b.Entity<RolePermission>().ToTable("RolePermissions");
+        b.Entity<UserPermission>().ToTable("UserPermissions");
+        b.Entity<PermissionHistory>().ToTable("PermissionHistory");
 
         b.Entity<UserRole>().HasKey(x => new { x.UserId, x.RoleId });
         b.Entity<RolePermission>().HasKey(x => new { x.RoleId, x.PermissionId });
+        b.Entity<UserPermission>().HasKey(x => new { x.UserId, x.PermissionId });
         b.Entity<UserRole>().HasOne(x => x.User).WithMany(x => x.UserRoles).HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         b.Entity<UserRole>().HasOne(x => x.Role).WithMany(x => x.UserRoles).HasForeignKey(x => x.RoleId).OnDelete(DeleteBehavior.Cascade);
         b.Entity<RolePermission>().HasOne(x => x.Role).WithMany(x => x.RolePermissions).HasForeignKey(x => x.RoleId).OnDelete(DeleteBehavior.Cascade);
         b.Entity<RolePermission>().HasOne(x => x.Permission).WithMany(x => x.RolePermissions).HasForeignKey(x => x.PermissionId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<UserPermission>().HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<UserPermission>().HasOne(x => x.Permission).WithMany(x => x.UserPermissions).HasForeignKey(x => x.PermissionId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<PermissionHistory>().HasKey(x => x.Id);
+        b.Entity<PermissionHistory>().HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
+        b.Entity<PermissionHistory>().HasOne(x => x.Permission).WithMany().HasForeignKey(x => x.PermissionId).OnDelete(DeleteBehavior.Restrict);
+        b.Entity<PermissionHistory>().HasOne(x => x.ChangedByUser).WithMany().HasForeignKey(x => x.ChangedByUserId).OnDelete(DeleteBehavior.Restrict);
+        b.Entity<PermissionHistory>().HasIndex(x => new { x.UserId, x.ChangedAt });
         // Match the soft-delete filters on required principals so join queries
         // cannot surface orphaned role or permission memberships.
         b.Entity<UserRole>().HasQueryFilter(x => !x.User!.IsDeleted && !x.Role!.IsDeleted);

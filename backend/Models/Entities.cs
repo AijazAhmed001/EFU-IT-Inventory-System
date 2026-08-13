@@ -46,6 +46,35 @@ public class Permission : BaseEntity
     public string Name { get; set; } = "";
     public string? Description { get; set; }
     public ICollection<RolePermission> RolePermissions { get; set; } = new List<RolePermission>();
+    public ICollection<UserPermission> UserPermissions { get; set; } = new List<UserPermission>();
+}
+
+public class UserPermission
+{
+    public Guid UserId { get; set; }
+    public Guid PermissionId { get; set; }
+    public bool IsGranted { get; set; } = true;
+    public Guid GrantedByUserId { get; set; }
+    public DateTime GrantedAt { get; set; } = DateTime.UtcNow;
+    public Guid? RevokedByUserId { get; set; }
+    public DateTime? RevokedAt { get; set; }
+    public User? User { get; set; }
+    public Permission? Permission { get; set; }
+}
+
+public class PermissionHistory
+{
+    public long Id { get; set; }
+    public Guid UserId { get; set; }
+    public Guid PermissionId { get; set; }
+    public bool PreviousValue { get; set; }
+    public bool NewValue { get; set; }
+    public Guid ChangedByUserId { get; set; }
+    public DateTime ChangedAt { get; set; } = DateTime.UtcNow;
+    public string CorrelationId { get; set; } = "";
+    public User? User { get; set; }
+    public Permission? Permission { get; set; }
+    public User? ChangedByUser { get; set; }
 }
 
 public class User : BaseEntity

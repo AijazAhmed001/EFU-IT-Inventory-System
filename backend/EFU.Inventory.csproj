@@ -5,20 +5,33 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>EFU.Inventory</RootNamespace>
     <AssemblyName>EFU.Inventory</AssemblyName>
-<<<<<<< HEAD
     <UserSecretsId>EFU.Inventory.Development</UserSecretsId>
-=======
->>>>>>> 7e0ad1c9984c5f686e241c1ad1dd4bc2f24f14e7
   </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0"><PrivateAssets>all</PrivateAssets></PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
     <PackageReference Include="Microsoft.OpenApi" Version="2.11.0" />
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
   </ItemGroup>
+
+  <!-- The current implementation lives in the root feature folders. Exclude the
+       superseded pre-merge copies while retaining its two unique controllers. -->
   <ItemGroup>
-    <Content Include="Database\Migrations\**\*.sql" CopyToOutputDirectory="PreserveNewest" />
+    <Compile Remove="Common\**\*.cs" />
+    <Compile Remove="Domain\**\*.cs" />
+    <Compile Remove="Infrastructure\**\*.cs" />
+    <Compile Remove="Features\**\*.cs" />
+    <Compile Include="Features\Assets\TaskLookupsController.cs" />
+    <Compile Include="Features\Users\PermissionsController.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Database\Migrations\**\*.sql"
+             CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

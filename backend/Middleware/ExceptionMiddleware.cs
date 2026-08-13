@@ -41,12 +41,8 @@ public class ExceptionMiddleware(
             var response = new
             {
                 success = false,
-<<<<<<< HEAD
                 message,
                 correlationId = context.TraceIdentifier
-=======
-                message
->>>>>>> 7e0ad1c9984c5f686e241c1ad1dd4bc2f24f14e7
             };
 
             await context.Response.WriteAsync(JsonSerializer.Serialize(response));

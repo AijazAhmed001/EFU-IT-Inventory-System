@@ -4,12 +4,9 @@ using EFU.Inventory.Data;
 using EFU.Inventory.Middleware;
 using EFU.Inventory.Models;
 using EFU.Inventory.Services;
-<<<<<<< HEAD
 using EFU.Inventory.Authorization;
-using Microsoft.AspNetCore.Authorization;
-=======
->>>>>>> 7e0ad1c9984c5f686e241c1ad1dd4bc2f24f14e7
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +14,15 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var port = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrWhiteSpace(port))
+{
+    if (!int.TryParse(port, out var renderPort) || renderPort is < 1 or > 65535)
+        throw new InvalidOperationException("PORT must be a valid TCP port number.");
+
+    builder.WebHost.UseUrls($"http://0.0.0.0:{renderPort}");
+}
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("DefaultConnection is missing.");
@@ -93,22 +99,40 @@ builder.Services
     });
 
 builder.Services.AddAuthorization();
-<<<<<<< HEAD
 builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
-=======
->>>>>>> 7e0ad1c9984c5f686e241c1ad1dd4bc2f24f14e7
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Frontend", policy =>
     {
+        var allowedOrigins = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "https://efu-inventory-system-wji1.vercel.app",
+            "http://localhost:5173",
+            "http://localhost:5175",
+            "http://192.168.15.15:5173",
+            "http://192.168.15.15:5175"
+        };
+
+        foreach (var configuredOrigin in builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? [])
+        {
+            if (Uri.TryCreate(configuredOrigin, UriKind.Absolute, out var originUri) &&
+                (originUri.Scheme == Uri.UriSchemeHttp || originUri.Scheme == Uri.UriSchemeHttps))
+            {
+                allowedOrigins.Add(configuredOrigin.TrimEnd('/'));
+            }
+        }
+
+        var frontendUrl = builder.Configuration["FrontendUrl"];
+        if (Uri.TryCreate(frontendUrl, UriKind.Absolute, out var frontendUri) &&
+            (frontendUri.Scheme == Uri.UriSchemeHttp || frontendUri.Scheme == Uri.UriSchemeHttps))
+        {
+            allowedOrigins.Add(frontendUrl!.TrimEnd('/'));
+        }
+
         policy
-<<<<<<< HEAD
-            .WithOrigins(builder.Configuration["FrontendUrl"] ?? "http://192.168.15.15:5175")
-=======
-            .WithOrigins(builder.Configuration["FrontendUrl"] ?? "http://192.168.15.15:5173")
->>>>>>> 7e0ad1c9984c5f686e241c1ad1dd4bc2f24f14e7
+            .WithOrigins([.. allowedOrigins])
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
@@ -117,10 +141,7 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddRateLimiter(options =>
 {
-<<<<<<< HEAD
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-=======
->>>>>>> 7e0ad1c9984c5f686e241c1ad1dd4bc2f24f14e7
     options.AddFixedWindowLimiter("api", limiter =>
     {
         limiter.PermitLimit = 200;
@@ -128,7 +149,6 @@ builder.Services.AddRateLimiter(options =>
         limiter.QueueLimit = 0;
         limiter.AutoReplenishment = true;
     });
-<<<<<<< HEAD
     options.AddFixedWindowLimiter("auth-login", limiter =>
     {
         limiter.PermitLimit = 5;
@@ -147,8 +167,6 @@ builder.Services.AddRateLimiter(options =>
         limiter.Window = TimeSpan.FromMinutes(15);
         limiter.QueueLimit = 0;
     });
-=======
->>>>>>> 7e0ad1c9984c5f686e241c1ad1dd4bc2f24f14e7
 });
 
 var app = builder.Build();
@@ -162,8 +180,9 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
-    app.UseHttpsRedirection();
-<<<<<<< HEAD
+    // Render terminates TLS before proxying requests to the container over HTTP.
+    // Keep local/non-Render HTTPS behavior without redirecting Render health checks.
+    if (string.IsNullOrWhiteSpace(port)) app.UseHttpsRedirection();
     app.UseHsts();
 }
 
@@ -176,11 +195,6 @@ app.Use(async (context, next) =>
     context.Response.Headers["X-Correlation-ID"] = context.TraceIdentifier;
     await next();
 });
-
-=======
-}
-
->>>>>>> 7e0ad1c9984c5f686e241c1ad1dd4bc2f24f14e7
 app.UseCors("Frontend");
 app.UseRateLimiter();
 app.UseAuthentication();
@@ -194,6 +208,14 @@ app.MapGet("/api/health", () => Results.Ok(new
         status = "online",
         timestamp = DateTimeOffset.UtcNow
     }
+}))
+.AllowAnonymous()
+.RequireRateLimiting("api");
+
+app.MapGet("/health", () => Results.Ok(new
+{
+    status = "healthy",
+    timestamp = DateTimeOffset.UtcNow
 }))
 .AllowAnonymous()
 .RequireRateLimiting("api");

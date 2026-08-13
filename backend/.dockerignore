@@ -1,0 +1,15 @@
+bin/
+obj/
+.git/
+.github/
+.vscode/
+.idea/
+node_modules/
+*.user
+*.suo
+.env
+.env.*
+appsettings.json
+appsettings.Development.json
+TestResults/
+coverage/
