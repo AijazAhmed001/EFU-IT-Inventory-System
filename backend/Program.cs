@@ -4,8 +4,11 @@ using EFU.Inventory.Data;
 using EFU.Inventory.Middleware;
 using EFU.Inventory.Models;
 using EFU.Inventory.Services;
+<<<<<<< HEAD
 using EFU.Inventory.Authorization;
 using Microsoft.AspNetCore.Authorization;
+=======
+>>>>>>> 7e0ad1c9984c5f686e241c1ad1dd4bc2f24f14e7
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
@@ -90,15 +93,22 @@ builder.Services
     });
 
 builder.Services.AddAuthorization();
+<<<<<<< HEAD
 builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
+=======
+>>>>>>> 7e0ad1c9984c5f686e241c1ad1dd4bc2f24f14e7
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Frontend", policy =>
     {
         policy
+<<<<<<< HEAD
             .WithOrigins(builder.Configuration["FrontendUrl"] ?? "http://192.168.15.15:5175")
+=======
+            .WithOrigins(builder.Configuration["FrontendUrl"] ?? "http://192.168.15.15:5173")
+>>>>>>> 7e0ad1c9984c5f686e241c1ad1dd4bc2f24f14e7
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
@@ -107,7 +117,10 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddRateLimiter(options =>
 {
+<<<<<<< HEAD
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+=======
+>>>>>>> 7e0ad1c9984c5f686e241c1ad1dd4bc2f24f14e7
     options.AddFixedWindowLimiter("api", limiter =>
     {
         limiter.PermitLimit = 200;
@@ -115,6 +128,7 @@ builder.Services.AddRateLimiter(options =>
         limiter.QueueLimit = 0;
         limiter.AutoReplenishment = true;
     });
+<<<<<<< HEAD
     options.AddFixedWindowLimiter("auth-login", limiter =>
     {
         limiter.PermitLimit = 5;
@@ -133,6 +147,8 @@ builder.Services.AddRateLimiter(options =>
         limiter.Window = TimeSpan.FromMinutes(15);
         limiter.QueueLimit = 0;
     });
+=======
+>>>>>>> 7e0ad1c9984c5f686e241c1ad1dd4bc2f24f14e7
 });
 
 var app = builder.Build();
@@ -147,6 +163,7 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseHttpsRedirection();
+<<<<<<< HEAD
     app.UseHsts();
 }
 
@@ -160,6 +177,10 @@ app.Use(async (context, next) =>
     await next();
 });
 
+=======
+}
+
+>>>>>>> 7e0ad1c9984c5f686e241c1ad1dd4bc2f24f14e7
 app.UseCors("Frontend");
 app.UseRateLimiter();
 app.UseAuthentication();
