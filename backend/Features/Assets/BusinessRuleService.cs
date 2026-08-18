@@ -46,7 +46,7 @@ public sealed class BusinessRuleService(AppDbContext db)
     {
         var status = await db.Employees.Where(item => item.Id == employeeId).Select(item => item.Status).SingleOrDefaultAsync(ct)
             ?? throw new KeyNotFoundException("Employee not found.");
-        if (status != RecordStatuses.Active) throw new InactiveLookupException("The selected employee is inactive.");
+        if (!IsActiveStatus(status)) throw new InactiveLookupException("The selected employee is inactive.");
     }
 
     public async Task EnsureLocationActive(Guid? locationId, CancellationToken ct = default)
@@ -54,6 +54,9 @@ public sealed class BusinessRuleService(AppDbContext db)
         if (locationId is null) return;
         var status = await db.Locations.Where(item => item.Id == locationId).Select(item => item.Status).SingleOrDefaultAsync(ct)
             ?? throw new KeyNotFoundException("Location not found.");
-        if (status != RecordStatuses.Active) throw new InactiveLookupException("The selected location is inactive.");
+        if (!IsActiveStatus(status)) throw new InactiveLookupException("The selected location is inactive.");
     }
+
+    public static bool IsActiveStatus(string? status) =>
+        string.Equals(status?.Trim(), RecordStatuses.Active, StringComparison.OrdinalIgnoreCase);
 }

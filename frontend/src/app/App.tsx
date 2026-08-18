@@ -8,6 +8,7 @@ import Reports from "../features/reports/pages/Reports"
 import Settings from "../features/settings/pages/Settings"
 import Profile from "../features/profile/pages/Profile"
 import Notifications from "../features/notifications/pages/Notifications"
+import AssetExpiryReminders from "../features/notifications/pages/AssetExpiryReminders"
 import Assets from "../features/assets/pages/Assets"
 import AllocationHistory from "../features/allocations/pages/AllocationHistoryPage"
 import { AssetAllocation, AssetRevocation, AssetExpiration } from "../features/transactions/pages/TransactionsPage"
@@ -15,8 +16,10 @@ import { authApi, clearSession, loadSession, updateStoredUser } from "../lib/api
 import { installInputLimits } from "../constants/inputLimits"
 import AccessDenied from "../components/feedback/AccessDenied"
 import { hasPermission, screenPermission } from "../auth/permissions"
+import PurchaseOrdersPage from "../features/purchase-orders/pages/PurchaseOrdersPage"
+import PurchaseOrderFormPage from "../features/purchase-orders/pages/PurchaseOrderFormPage"
 
-type Screen = "dashboard" | "assets" | "asset-type" | "asset-make" | "motherboard" | "memory" | "storage" | "operating-system" | "vendor" | "province" | "city" | "location" | "department" | "office" | "employee" | "lifecycle-policy" | "new-asset" | "allocations" | "asset-allocation" | "asset-revocation" | "asset-expiration" | "asset-history" | "settings" | "profile" | "notifications" | "asset-details"
+type Screen = "dashboard" | "purchase-orders" | "purchase-order-form" | "assets" | "asset-type" | "asset-make" | "motherboard" | "memory" | "storage" | "operating-system" | "vendor" | "province" | "city" | "location" | "department" | "office" | "employee" | "lifecycle-policy" | "new-asset" | "allocations" | "asset-allocation" | "asset-revocation" | "asset-expiration" | "asset-history" | "settings" | "profile" | "notifications" | "email-reminders" | "asset-details"
 
 const masterSetupScreens: Screen[] = [
   "asset-type",
@@ -37,6 +40,8 @@ const masterSetupScreens: Screen[] = [
 
 const screenRoutes: Record<Screen, string> = {
   dashboard: "/dashboard",
+  "purchase-orders": "/purchase-orders",
+  "purchase-order-form": "/purchase-orders/new",
   assets: "/assets",
   "new-asset": "/assets/new",
   allocations: "/allocations",
@@ -47,6 +52,7 @@ const screenRoutes: Record<Screen, string> = {
   settings: "/settings",
   profile: "/profile",
   notifications: "/notifications",
+  "email-reminders": "/notifications/email-reminders",
   "asset-details": "/assets",
   "asset-type": "/master/asset-types",
   "asset-make": "/master/asset-makes",
@@ -68,9 +74,11 @@ const routeScreens = Object.fromEntries(
   Object.entries(screenRoutes).map(([screen, route]) => [route, screen]),
 ) as Record<string, Screen>
 const loginRoute = "/login"
-const screenFromLocation = (): Screen =>
-  routeScreens[window.location.pathname.replace(/\/$/, "") || "/"] ||
-  "dashboard"
+const screenFromLocation = (): Screen => {
+  const path = window.location.pathname.replace(/\/$/, "") || "/"
+  if (/^\/purchase-orders\/[^/]+(?:\/(?:edit|receive))?$/.test(path)) return "purchase-order-form"
+  return routeScreens[path] || "dashboard"
+}
 
 export default function App() {
   const [loggedIn, setLoggedIn] = useState(() => loadSession(false) !== null)
@@ -161,6 +169,8 @@ export default function App() {
     if (!isAllowed(currentScreen)) return <AccessDenied onDashboard={() => navigate('dashboard')} />
     if (currentScreen === "dashboard")
       return <Dashboard onNavigate={navigate} />
+    if (currentScreen === "purchase-orders") return <PurchaseOrdersPage />
+    if (currentScreen === "purchase-order-form") return <PurchaseOrderFormPage />
     if (currentScreen === "assets") return <Assets />
     if (currentScreen === "allocations") return <AllocationHistory />
     if (masterSetupScreens.includes(currentScreen))
@@ -174,6 +184,7 @@ export default function App() {
     if (currentScreen === "settings") return <Settings />
     if (currentScreen === "profile") return <Profile />
     if (currentScreen === "notifications") return <Notifications />
+    if (currentScreen === "email-reminders") return <AssetExpiryReminders />
     return <Dashboard onNavigate={navigate} />
   }
 

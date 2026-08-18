@@ -231,7 +231,8 @@ public class AssetsController(
             ?? throw new KeyNotFoundException("Attachment not found");
         var root = Path.GetFullPath(environment.ContentRootPath);
         var path = Path.GetFullPath(Path.Combine(root, file.StoragePath));
-        if (!path.StartsWith(root, StringComparison.OrdinalIgnoreCase) || !System.IO.File.Exists(path))
+        var rootPrefix = root.EndsWith(Path.DirectorySeparatorChar) ? root : root + Path.DirectorySeparatorChar;
+        if (!path.StartsWith(rootPrefix, StringComparison.OrdinalIgnoreCase) || !System.IO.File.Exists(path))
             throw new KeyNotFoundException("Attachment file not found");
         return PhysicalFile(path, file.ContentType, file.OriginalFileName);
     }

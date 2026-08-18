@@ -4,7 +4,7 @@ React, TypeScript, Vite and Tailwind CSS application.
 
 ## Development
 
-- `npm run dev` starts Vite on `VITE_PORT` or port 5175.
+- `npm run dev` starts Vite on `VITE_PORT` or port 5173.
 - `npm run build` creates a production bundle.
 - `npx tsc --noEmit` performs strict type checking.
 

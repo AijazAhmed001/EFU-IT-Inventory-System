@@ -200,7 +200,18 @@ public class MasterController(
             ?? throw new ArgumentException("Invalid request body");
 
         ValidateStringLengths(entity);
+        NormalizeStatus(entity);
         return entity;
+    }
+
+    private static void NormalizeStatus(BaseEntity entity)
+    {
+        var property = entity.GetType().GetProperty("Status");
+        if (property?.CanRead == true && property.CanWrite && property.PropertyType == typeof(string) &&
+            property.GetValue(entity) is string status)
+        {
+            property.SetValue(entity, status.Trim().ToUpperInvariant());
+        }
     }
 
     private static void ValidateStringLengths(BaseEntity entity)

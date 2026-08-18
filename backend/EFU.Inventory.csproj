@@ -19,15 +19,15 @@
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
   </ItemGroup>
 
-  <!-- The current implementation lives in the root feature folders. Exclude the
-       superseded pre-merge copies while retaining its two unique controllers. -->
+  <!-- Compile the feature-oriented implementation and exclude the superseded
+       pre-merge root copies that define the same namespaces and types. -->
   <ItemGroup>
-    <Compile Remove="Common\**\*.cs" />
-    <Compile Remove="Domain\**\*.cs" />
-    <Compile Remove="Infrastructure\**\*.cs" />
-    <Compile Remove="Features\**\*.cs" />
-    <Compile Include="Features\Assets\TaskLookupsController.cs" />
-    <Compile Include="Features\Users\PermissionsController.cs" />
+    <Compile Remove="Controllers\**\*.cs" />
+    <Compile Remove="Data\**\*.cs" />
+    <Compile Remove="DTOs\**\*.cs" />
+    <Compile Remove="Extensions\**\*.cs" />
+    <Compile Remove="Models\**\*.cs" />
+    <Compile Remove="Services\**\*.cs" />
   </ItemGroup>
 
   <ItemGroup>

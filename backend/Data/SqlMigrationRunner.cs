@@ -37,14 +37,20 @@ END
         {
             var version = Path.GetFileName(file);
             var sql = await File.ReadAllTextAsync(file, cancellationToken);
-            var checksum = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(sql)));
+            var normalizedSql = NormalizeLineEndings(sql);
+            var checksum = CalculateChecksum(normalizedSql);
+            var compatibleChecksums = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                checksum,
+                CalculateChecksum(normalizedSql.Replace("\n", "\r\n", StringComparison.Ordinal))
+            };
 
             await using var check = new SqlCommand("SELECT [Checksum] FROM [dbo].[__DatabaseMigrations] WHERE [Version]=@v", connection);
             check.Parameters.AddWithValue("@v", version);
             var existing = (string?)await check.ExecuteScalarAsync(cancellationToken);
             if (existing is not null)
             {
-                if (!string.Equals(existing, checksum, StringComparison.OrdinalIgnoreCase))
+                if (!compatibleChecksums.Contains(existing))
                     throw new InvalidOperationException($"Migration '{version}' was modified after being applied. Create a new migration instead.");
                 continue;
             }
@@ -78,6 +84,13 @@ END
     private static IEnumerable<string> SplitBatches(string sql) =>
         System.Text.RegularExpressions.Regex.Split(sql, @"^\s*GO\s*;?\s*$",
             System.Text.RegularExpressions.RegexOptions.Multiline | System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+    private static string NormalizeLineEndings(string sql) =>
+        sql.Replace("\r\n", "\n", StringComparison.Ordinal)
+            .Replace("\r", "\n", StringComparison.Ordinal);
+
+    private static string CalculateChecksum(string sql) =>
+        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(sql)));
 
     private static async Task EnsureDatabaseExistsAsync(string connectionString, CancellationToken cancellationToken)
     {

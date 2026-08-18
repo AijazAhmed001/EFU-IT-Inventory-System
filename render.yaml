@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: efu-inventory-api
+    runtime: docker
+    repo: https://github.com/AijazAhmed001/EFU-IT-Inventory-System.git
+    branch: main
+    region: singapore
+    plan: starter
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: FrontendUrl
+        value: https://efu-inventory-system-wji1.vercel.app
+      - key: ConnectionStrings__DefaultConnection
+        sync: false
+      - key: Jwt__Secret
+        sync: false
+      - key: Jwt__Issuer
+        sync: false
+      - key: Jwt__Audience
+        sync: false
+      - key: BootstrapAdmin__Email
+        sync: false
+      - key: BootstrapAdmin__Password
+        sync: false

@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # EFU IT Hardware Inventory System
 
 Enterprise hardware inventory application with a React, TypeScript, Vite and Tailwind frontend and an ASP.NET Core, Entity Framework Core and SQL Server backend.
@@ -31,7 +30,7 @@ npm install
 npm run dev
 ```
 
-Development URL: `http://localhost:5175`
+Development URL: `http://localhost:5173`
 
 Production validation:
 
@@ -57,7 +56,8 @@ Backend:
 - `SMTP__Host`, `SMTP__Port`, `SMTP__Username`, `SMTP__Password`, `SMTP__From`
 
 Never commit production passwords, JWT secrets, SMTP credentials, or production connection strings.
-=======
+
+---
 <!-- ======================================================================= -->
 
 <!--                                                                         -->
@@ -1171,4 +1171,3 @@ src="https://capsule-render.vercel.app/api?type=waving&height=190&section=footer
 />
 
 </div>
->>>>>>> 7e0ad1c9984c5f686e241c1ad1dd4bc2f24f14e7

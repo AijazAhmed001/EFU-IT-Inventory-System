@@ -9,10 +9,12 @@ export const hasAllPermissions = (codes: string[]) => codes.every(hasPermission)
 
 export const screenPermission: Record<string, string> = {
   dashboard: 'dashboard.view', assets: 'assets.view', 'new-asset': 'assets.create',
+  'purchase-orders': 'purchase_orders.view', 'purchase-order-form': 'purchase_orders.view',
   allocations: 'allocations.view', 'asset-allocation': 'allocations.create',
   'asset-revocation': 'allocations.revoke', 'asset-expiration': 'assets.retire',
   'asset-history': 'reports.asset-history.view', settings: 'settings.view',
   notifications: 'notifications.view', 'asset-type': 'master.asset-types.view',
+  'email-reminders': 'notifications.view',
   'asset-make': 'master.asset-makes.view', motherboard: 'master.motherboards.view',
   memory: 'master.memory.view', storage: 'master.storage.view',
   'operating-system': 'master.operating-systems.view', vendor: 'master.vendors.view',

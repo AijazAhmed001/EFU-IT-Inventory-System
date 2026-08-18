@@ -110,24 +110,25 @@ public class AuthController(
 
         if (request.Name is not null)
         {
-            user.Name = request.Name;
+            user.Name = request.Name.Trim();
         }
 
         if (request.Phone is not null)
         {
-            user.Phone = request.Phone;
+            user.Phone = request.Phone.Trim();
         }
 
         if (request.EmployeeCode is not null)
         {
-            user.EmployeeCode = request.EmployeeCode;
+            user.EmployeeCode = request.EmployeeCode.Trim();
         }
 
         user.DepartmentId = request.DepartmentId ?? user.DepartmentId;
         user.LocationId = request.LocationId ?? user.LocationId;
 
         await db.SaveChangesAsync();
-        return Ok(new { success = true, data = Profile(user, Array.Empty<string>()) });
+        var permissions = await EffectivePermissions(user);
+        return Ok(new { success = true, data = Profile(user, permissions) });
     }
 
     [HttpPost("change-password")]
@@ -163,8 +164,8 @@ public class AuthController(
     [EnableRateLimiting("auth-recovery")]
     public async Task<IActionResult> Forgot(ForgotPasswordRequest request)
     {
-        var user = await db.Users.FirstOrDefaultAsync(
-            item => item.Email == request.Email);
+        var email = request.Email.Trim().ToLowerInvariant();
+        var user = await db.Users.FirstOrDefaultAsync(item => item.Email == email);
 
         if (user is not null)
         {
@@ -254,6 +255,25 @@ public class AuthController(
             .Where(item => item.UserId == userId && item.RevokedAt == null)
             .ToListAsync();
         foreach (var token in tokens) token.RevokedAt = now;
+    }
+
+    private async Task<IReadOnlyCollection<string>> EffectivePermissions(User user)
+    {
+        if (user.Role == Roles.SuperAdmin) return EFU.Inventory.Authorization.Permissions.All;
+        if (user.Role == Roles.Viewer)
+        {
+            return EFU.Inventory.Authorization.Permissions.Catalog
+                .Where(item => item.Code is EFU.Inventory.Authorization.Permissions.DashboardView or EFU.Inventory.Authorization.Permissions.AssetsView or EFU.Inventory.Authorization.Permissions.ReportsInventoryView ||
+                    item.Code.StartsWith("master.", StringComparison.Ordinal) && item.Code.EndsWith(".view", StringComparison.Ordinal))
+                .Select(item => item.Code)
+                .ToArray();
+        }
+
+        return await db.UserPermissions.AsNoTracking()
+            .Where(item => item.UserId == user.Id && item.IsGranted && item.RevokedAt == null)
+            .Select(item => item.Permission!.Code)
+            .OrderBy(code => code)
+            .ToArrayAsync();
     }
 
     private static object Profile(User user, IEnumerable<string> permissions)

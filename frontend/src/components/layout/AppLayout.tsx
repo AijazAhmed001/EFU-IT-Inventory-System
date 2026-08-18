@@ -23,6 +23,7 @@ import {
   Settings,
   LogOut,
   Bell,
+  Mail,
   Check,
   Search,
   Moon,
@@ -37,7 +38,7 @@ import {
 import { api, loadSession } from "../../lib/api"
 import { hasPermission, screenPermission } from "../../auth/permissions"
 
-type Screen = "dashboard" | "assets" | "asset-type" | "asset-make" | "motherboard" | "memory" | "storage" | "operating-system" | "vendor" | "province" | "city" | "location" | "department" | "office" | "employee" | "lifecycle-policy" | "new-asset" | "allocations" | "asset-allocation" | "asset-revocation" | "asset-expiration" | "asset-history" | "settings" | "profile" | "notifications" | "asset-details"
+type Screen = "dashboard" | "purchase-orders" | "purchase-order-form" | "assets" | "asset-type" | "asset-make" | "motherboard" | "memory" | "storage" | "operating-system" | "vendor" | "province" | "city" | "location" | "department" | "office" | "employee" | "lifecycle-policy" | "new-asset" | "allocations" | "asset-allocation" | "asset-revocation" | "asset-expiration" | "asset-history" | "settings" | "profile" | "notifications" | "email-reminders" | "asset-details"
 
 interface Props {
   currentScreen: Screen
@@ -60,6 +61,7 @@ const navItems: NavItem[] = [
     icon: <LayoutDashboard size={18} />,
   },
   { label: "All Assets", screen: "assets", icon: <Monitor size={18} /> },
+  { label: "Purchase Orders", screen: "purchase-orders", icon: <ClipboardList size={18} /> },
   {
     label: "Master Setup",
     icon: <Layers size={18} />,
@@ -139,6 +141,7 @@ const navItems: NavItem[] = [
     ],
   },
   { label: "Settings", screen: "settings", icon: <Settings size={18} /> },
+  { label: "Email Reminders", screen: "email-reminders", icon: <Mail size={18} /> },
 ]
 
 export default function Layout({

@@ -41,11 +41,19 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<UserNotificationPreference> UserNotificationPreferences => Set<UserNotificationPreference>();
+    public DbSet<AssetExpiryReminderLog> AssetExpiryReminderLogs => Set<AssetExpiryReminderLog>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
     public DbSet<ReportRun> ReportRuns => Set<ReportRun>();
     public DbSet<BackupRun> BackupRuns => Set<BackupRun>();
     public DbSet<StoredFile> StoredFiles => Set<StoredFile>();
+    public DbSet<PurchaseOrder> PurchaseOrders => Set<PurchaseOrder>();
+    public DbSet<PurchaseOrderItem> PurchaseOrderItems => Set<PurchaseOrderItem>();
+    public DbSet<PurchaseOrderAttachment> PurchaseOrderAttachments => Set<PurchaseOrderAttachment>();
+    public DbSet<PurchaseOrderStatusHistory> PurchaseOrderStatusHistory => Set<PurchaseOrderStatusHistory>();
+    public DbSet<GoodsReceipt> GoodsReceipts => Set<GoodsReceipt>();
+    public DbSet<GoodsReceiptItem> GoodsReceiptItems => Set<GoodsReceiptItem>();
+    public DbSet<GoodsReceiptUnit> GoodsReceiptUnits => Set<GoodsReceiptUnit>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -127,13 +135,40 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         b.Entity<UserNotificationPreference>().HasIndex(x => x.UserId).IsUnique().HasFilter("[IsDeleted] = 0");
         b.Entity<ActivityLog>().HasIndex(x => new { x.Entity, x.EntityId, x.CreatedAt });
         b.Entity<ActivityLog>().HasIndex(x => new { x.UserId, x.CreatedAt });
+        b.Entity<AssetExpiryReminderLog>().ToTable("AssetExpiryReminderLogs");
+        b.Entity<AssetExpiryReminderLog>().HasIndex(x => new { x.AssetId, x.ExpiryType, x.ExpiryDate, x.RecipientKey, x.DaysRemaining }).IsUnique();
+        b.Entity<AssetExpiryReminderLog>().HasIndex(x => new { x.ReminderDate, x.Status });
+        b.Entity<AssetExpiryReminderLog>().HasIndex(x => new { x.RecipientEmail, x.CreatedAt });
         b.Entity<ReportRun>().HasIndex(x => new { x.UserId, x.CreatedAt });
         b.Entity<BackupRun>().HasIndex(x => new { x.Status, x.CreatedAt });
         b.Entity<StoredFile>().HasIndex(x => new { x.EntityType, x.EntityId });
 
+        b.Entity<PurchaseOrder>().HasIndex(x => x.PoNumber).IsUnique();
+        b.Entity<PurchaseOrder>().HasIndex(x => new { x.Status, x.PoDate });
+        b.Entity<PurchaseOrder>().HasIndex(x => new { x.PoYear, x.VendorId });
+        b.Entity<PurchaseOrder>().HasIndex(x => x.DeliveryLocationId);
+        b.Entity<PurchaseOrderItem>().HasIndex(x => new { x.PurchaseOrderId, x.LineNumber }).IsUnique();
+        b.Entity<PurchaseOrderItem>().HasIndex(x => x.BranchUnitId);
+        b.Entity<PurchaseOrderAttachment>().HasIndex(x => x.PurchaseOrderId);
+        b.Entity<PurchaseOrderStatusHistory>().HasIndex(x => new { x.PurchaseOrderId, x.PerformedAt });
+        b.Entity<GoodsReceipt>().HasIndex(x => x.ReceiptNumber).IsUnique();
+        b.Entity<GoodsReceipt>().HasIndex(x => x.PurchaseOrderId);
+        b.Entity<GoodsReceiptItem>().HasIndex(x => new { x.GoodsReceiptId, x.PurchaseOrderItemId }).IsUnique();
+        b.Entity<GoodsReceiptUnit>().HasIndex(x => x.SerialNumber).IsUnique().HasFilter("[SerialNumber] IS NOT NULL");
+        b.Entity<GoodsReceiptUnit>().HasIndex(x => x.AssetId).IsUnique().HasFilter("[AssetId] IS NOT NULL");
+
         b.Entity<Asset>().Property(x => x.PurchaseCost).HasPrecision(18, 2);
         b.Entity<Retirement>().Property(x => x.SalvageValue).HasPrecision(18, 2);
         b.Entity<LifecyclePolicy>().Property(x => x.SalvageValuePercent).HasPrecision(5, 2);
+        foreach (var property in new[] { "Subtotal", "DiscountTotal", "TaxTotal", "OtherCharges", "GrandTotal" })
+            b.Entity<PurchaseOrder>().Property(property).HasPrecision(18, 2);
+        foreach (var property in new[] { "UnitPrice", "Quantity", "ReceivedQuantity", "DiscountValue", "DiscountAmount", "TaxAmount", "LineTotal" })
+            b.Entity<PurchaseOrderItem>().Property(property).HasPrecision(18, 2);
+        b.Entity<PurchaseOrderItem>().Property(x => x.TaxRate).HasPrecision(5, 2);
+        b.Entity<GoodsReceiptItem>().Property(x => x.QuantityReceived).HasPrecision(18, 2);
+        b.Entity<PurchaseOrder>().Property(x => x.RowVersion).IsRowVersion();
+        b.Entity<PurchaseOrderItem>().Property(x => x.RowVersion).IsRowVersion();
+        b.Entity<GoodsReceipt>().Property(x => x.RowVersion).IsRowVersion();
 
         b.Entity<SystemSetting>().HasKey(x => x.Key);
         b.Entity<SystemSetting>().Property(x => x.Key).HasMaxLength(150);
@@ -196,10 +231,29 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         b.Entity<LoginActivity>().HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.SetNull);
         b.Entity<Notification>().HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         b.Entity<UserNotificationPreference>().HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<AssetExpiryReminderLog>().HasOne(x => x.Asset).WithMany().HasForeignKey(x => x.AssetId).OnDelete(DeleteBehavior.Restrict);
+        b.Entity<AssetExpiryReminderLog>().HasOne(x => x.Allocation).WithMany().HasForeignKey(x => x.AllocationId).OnDelete(DeleteBehavior.SetNull);
+        b.Entity<AssetExpiryReminderLog>().HasOne(x => x.Employee).WithMany().HasForeignKey(x => x.EmployeeId).OnDelete(DeleteBehavior.SetNull);
         b.Entity<ActivityLog>().HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.SetNull);
         b.Entity<ReportRun>().HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.SetNull);
         b.Entity<BackupRun>().HasOne(x => x.RequestedByUser).WithMany().HasForeignKey(x => x.RequestedByUserId).OnDelete(DeleteBehavior.SetNull);
         b.Entity<StoredFile>().HasOne(x => x.UploadedByUser).WithMany().HasForeignKey(x => x.UploadedByUserId).OnDelete(DeleteBehavior.SetNull);
+        b.Entity<PurchaseOrder>().HasOne(x => x.Vendor).WithMany().HasForeignKey(x => x.VendorId).OnDelete(DeleteBehavior.Restrict);
+        b.Entity<PurchaseOrder>().HasOne(x => x.DeliveryLocation).WithMany().HasForeignKey(x => x.DeliveryLocationId).OnDelete(DeleteBehavior.Restrict);
+        b.Entity<PurchaseOrder>().HasOne(x => x.CreatedByUser).WithMany().HasForeignKey(x => x.CreatedByUserId).OnDelete(DeleteBehavior.Restrict);
+        b.Entity<PurchaseOrderItem>().HasOne(x => x.PurchaseOrder).WithMany(x => x.Items).HasForeignKey(x => x.PurchaseOrderId).OnDelete(DeleteBehavior.Restrict);
+        b.Entity<PurchaseOrderItem>().HasOne(x => x.AssetType).WithMany().HasForeignKey(x => x.AssetTypeId).OnDelete(DeleteBehavior.Restrict);
+        b.Entity<PurchaseOrderItem>().HasOne(x => x.AssetMake).WithMany().HasForeignKey(x => x.AssetMakeId).OnDelete(DeleteBehavior.Restrict);
+        b.Entity<PurchaseOrderItem>().HasOne(x => x.BranchUnit).WithMany().HasForeignKey(x => x.BranchUnitId).OnDelete(DeleteBehavior.Restrict);
+        b.Entity<PurchaseOrderItem>().HasOne(x => x.IntendedUser).WithMany().HasForeignKey(x => x.IntendedUserId).OnDelete(DeleteBehavior.Restrict);
+        b.Entity<PurchaseOrderAttachment>().HasOne(x => x.PurchaseOrder).WithMany(x => x.Attachments).HasForeignKey(x => x.PurchaseOrderId).OnDelete(DeleteBehavior.Restrict);
+        b.Entity<PurchaseOrderStatusHistory>().HasOne(x => x.PurchaseOrder).WithMany(x => x.StatusHistory).HasForeignKey(x => x.PurchaseOrderId).OnDelete(DeleteBehavior.Restrict);
+        b.Entity<PurchaseOrderStatusHistory>().HasOne(x => x.PerformedByUser).WithMany().HasForeignKey(x => x.PerformedByUserId).OnDelete(DeleteBehavior.Restrict);
+        b.Entity<GoodsReceipt>().HasOne(x => x.PurchaseOrder).WithMany(x => x.Receipts).HasForeignKey(x => x.PurchaseOrderId).OnDelete(DeleteBehavior.Restrict);
+        b.Entity<GoodsReceiptItem>().HasOne(x => x.GoodsReceipt).WithMany(x => x.Items).HasForeignKey(x => x.GoodsReceiptId).OnDelete(DeleteBehavior.Restrict);
+        b.Entity<GoodsReceiptItem>().HasOne(x => x.PurchaseOrderItem).WithMany().HasForeignKey(x => x.PurchaseOrderItemId).OnDelete(DeleteBehavior.Restrict);
+        b.Entity<GoodsReceiptUnit>().HasOne(x => x.GoodsReceiptItem).WithMany(x => x.Units).HasForeignKey(x => x.GoodsReceiptItemId).OnDelete(DeleteBehavior.Restrict);
+        b.Entity<GoodsReceiptUnit>().HasOne(x => x.Asset).WithMany().HasForeignKey(x => x.AssetId).OnDelete(DeleteBehavior.Restrict);
 
         foreach (var e in b.Model.GetEntityTypes().Where(t => typeof(BaseEntity).IsAssignableFrom(t.ClrType)))
         {

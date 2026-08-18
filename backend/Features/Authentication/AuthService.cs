@@ -1,5 +1,6 @@
 using EFU.Inventory.Data;
 using EFU.Inventory.Models;
+using EFU.Inventory.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 namespace EFU.Inventory.Services;
@@ -36,6 +37,8 @@ public class AuthService(
 
         await db.SaveChangesAsync();
 
+        var permissions = await EffectivePermissions(user);
+
         return new
         {
             accessToken,
@@ -49,7 +52,8 @@ public class AuthService(
                 user.Role,
                 user.Status,
                 user.EmployeeCode,
-                user.Phone
+                user.Phone,
+                permissions
             }
         };
     }
@@ -94,5 +98,24 @@ public class AuthService(
             refreshToken = nextRefreshToken,
             expiresAt
         };
+    }
+
+    private async Task<IReadOnlyCollection<string>> EffectivePermissions(User user)
+    {
+        if (user.Role == Roles.SuperAdmin) return Permissions.All;
+        if (user.Role == Roles.Viewer)
+        {
+            return Permissions.Catalog
+                .Where(item => item.Code is Permissions.DashboardView or Permissions.AssetsView or Permissions.ReportsInventoryView ||
+                    item.Code.StartsWith("master.", StringComparison.Ordinal) && item.Code.EndsWith(".view", StringComparison.Ordinal))
+                .Select(item => item.Code)
+                .ToArray();
+        }
+
+        return await db.UserPermissions.AsNoTracking()
+            .Where(item => item.UserId == user.Id && item.IsGranted && item.RevokedAt == null)
+            .Select(item => item.Permission!.Code)
+            .OrderBy(code => code)
+            .ToArrayAsync();
     }
 }

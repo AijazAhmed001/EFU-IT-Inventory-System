@@ -39,6 +39,23 @@ public static class Permissions
     public const string SessionsManage = "sessions.manage";
     public const string BackupsView = "backups.view";
     public const string BackupsManage = "backups.manage";
+    public const string PurchaseOrdersView = "purchase_orders.view";
+    public const string PurchaseOrdersCreate = "purchase_orders.create";
+    public const string PurchaseOrdersEdit = "purchase_orders.edit";
+    public const string PurchaseOrdersDeleteDraft = "purchase_orders.delete_draft";
+    public const string PurchaseOrdersSubmit = "purchase_orders.submit";
+    public const string PurchaseOrdersApprove = "purchase_orders.approve";
+    public const string PurchaseOrdersReject = "purchase_orders.reject";
+    public const string PurchaseOrdersCancel = "purchase_orders.cancel";
+    public const string PurchaseOrdersLock = "purchase_orders.lock";
+    public const string PurchaseOrdersUnlock = "purchase_orders.unlock";
+    public const string PurchaseOrdersDuplicate = "purchase_orders.duplicate";
+    public const string PurchaseOrdersPrint = "purchase_orders.print";
+    public const string PurchaseOrdersExport = "purchase_orders.export";
+    public const string PurchaseOrdersReceive = "purchase_orders.receive";
+    public const string PurchaseOrdersCreateAssets = "purchase_orders.create_assets";
+    public const string PurchaseOrdersClose = "purchase_orders.close";
+    public const string PurchaseOrdersAttachmentsManage = "purchase_orders.attachments.manage";
 
     public static readonly IReadOnlyList<string> MasterKinds =
     ["asset-types", "asset-makes", "motherboards", "memory", "storage", "operating-systems", "vendors", "provinces", "cities", "locations", "departments", "offices", "employees", "lifecycle-policies"];
@@ -67,6 +84,23 @@ public static class Permissions
         var items = new List<PermissionDefinition>
         {
             new(DashboardView, "View Dashboard", "Dashboard"),
+            new(PurchaseOrdersView, "View Purchase Orders", "Purchase Orders"),
+            new(PurchaseOrdersCreate, "Create Purchase Orders", "Purchase Orders", PurchaseOrdersView),
+            new(PurchaseOrdersEdit, "Edit Purchase Orders", "Purchase Orders", PurchaseOrdersView),
+            new(PurchaseOrdersDeleteDraft, "Delete Draft Purchase Orders", "Purchase Orders", PurchaseOrdersView, true),
+            new(PurchaseOrdersSubmit, "Submit Purchase Orders", "Purchase Orders", PurchaseOrdersView),
+            new(PurchaseOrdersApprove, "Approve Purchase Orders", "Purchase Orders", PurchaseOrdersView, true),
+            new(PurchaseOrdersReject, "Reject Purchase Orders", "Purchase Orders", PurchaseOrdersView, true),
+            new(PurchaseOrdersCancel, "Cancel Purchase Orders", "Purchase Orders", PurchaseOrdersView, true),
+            new(PurchaseOrdersLock, "Lock Purchase Orders", "Purchase Orders", PurchaseOrdersView),
+            new(PurchaseOrdersUnlock, "Unlock Purchase Orders", "Purchase Orders", PurchaseOrdersView, true),
+            new(PurchaseOrdersDuplicate, "Duplicate Purchase Orders", "Purchase Orders", PurchaseOrdersView),
+            new(PurchaseOrdersPrint, "Print Purchase Orders", "Purchase Orders", PurchaseOrdersView),
+            new(PurchaseOrdersExport, "Export Purchase Orders", "Purchase Orders", PurchaseOrdersView),
+            new(PurchaseOrdersReceive, "Receive Purchase Orders", "Purchase Orders", PurchaseOrdersView),
+            new(PurchaseOrdersCreateAssets, "Create Assets from Receipts", "Purchase Orders", PurchaseOrdersReceive, true),
+            new(PurchaseOrdersClose, "Close Purchase Orders", "Purchase Orders", PurchaseOrdersView, true),
+            new(PurchaseOrdersAttachmentsManage, "Manage Purchase Order Attachments", "Purchase Orders", PurchaseOrdersView),
             new(AssetsView, "View Assets", "Assets"),
             new(AssetsCreate, "Create Assets", "Assets", AssetsView),
             new(AssetsUpdate, "Edit Assets", "Assets", AssetsView),

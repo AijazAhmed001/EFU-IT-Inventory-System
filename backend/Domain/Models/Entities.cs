@@ -306,6 +306,11 @@ public class Asset : BaseEntity
     public Guid? OperatingSystemId { get; set; }
     public Guid? VendorId { get; set; }
     public Guid? LocationId { get; set; }
+    public Guid? PurchaseOrderId { get; set; }
+    public Guid? PurchaseOrderItemId { get; set; }
+    public Guid? GoodsReceiptId { get; set; }
+    public Guid? GoodsReceiptItemId { get; set; }
+    public Guid? GoodsReceiptUnitId { get; set; }
     public AssetType? AssetType { get; set; }
     public AssetMake? AssetMake { get; set; }
     public Motherboard? Motherboard { get; set; }
@@ -393,6 +398,39 @@ public class UserNotificationPreference : BaseEntity
     public bool ReturnNotifications { get; set; } = true;
     public bool DailyEmailDigest { get; set; }
     public User? User { get; set; }
+}
+
+public static class AssetExpiryReminderStatuses
+{
+    public const string Pending = "PENDING";
+    public const string Processing = "PROCESSING";
+    public const string Sent = "SENT";
+    public const string Failed = "FAILED";
+    public const string Skipped = "SKIPPED";
+}
+
+public class AssetExpiryReminderLog : BaseEntity
+{
+    public Guid AssetId { get; set; }
+    public Guid? AllocationId { get; set; }
+    public Guid? EmployeeId { get; set; }
+    public string RecipientName { get; set; } = "";
+    public string RecipientEmail { get; set; } = "";
+    public string RecipientKey { get; set; } = "";
+    public string ExpiryType { get; set; } = "";
+    public DateTime ExpiryDate { get; set; }
+    public DateTime ReminderDate { get; set; }
+    public int DaysRemaining { get; set; }
+    public string Subject { get; set; } = "";
+    public string Status { get; set; } = AssetExpiryReminderStatuses.Pending;
+    public int AttemptCount { get; set; }
+    public string? ProviderMessageId { get; set; }
+    public string? ErrorMessage { get; set; }
+    public DateTime? SentAtUtc { get; set; }
+    public string CorrelationId { get; set; } = "";
+    public Asset? Asset { get; set; }
+    public Allocation? Allocation { get; set; }
+    public Employee? Employee { get; set; }
 }
 
 public class ActivityLog : BaseEntity

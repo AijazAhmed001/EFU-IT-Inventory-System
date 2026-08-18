@@ -1,5 +1,7 @@
 using System.Text;
 using System.Threading.RateLimiting;
+using System.Net;
+using System.Net.Sockets;
 using EFU.Inventory.Data;
 using EFU.Inventory.Middleware;
 using EFU.Inventory.Models;
@@ -7,11 +9,13 @@ using EFU.Inventory.Services;
 using EFU.Inventory.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using EFU.Inventory.Features.Notifications;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,7 +40,13 @@ builder.Services.AddScoped<AssetService>();
 builder.Services.AddScoped<AuditService>();
 builder.Services.AddScoped<DashboardService>();
 builder.Services.AddScoped<BusinessRuleService>();
+builder.Services.AddScoped<EFU.Inventory.Features.PurchaseOrders.PurchaseOrderService>();
+builder.Services.AddSingleton<IOraclePurchaseOrderGateway, DisabledOraclePurchaseOrderGateway>();
 builder.Services.AddScoped<IEmailService, SmtpEmailService>();
+builder.Services.Configure<AssetExpiryReminderOptions>(builder.Configuration.GetSection("AssetExpiryReminders"));
+builder.Services.AddScoped<AssetExpiryReminderSettingsStore>();
+builder.Services.AddScoped<IAssetExpiryReminderService, AssetExpiryReminderService>();
+builder.Services.AddHostedService<AssetExpiryReminderJob>();
 builder.Services.AddSingleton<SqlMigrationRunner>();
 
 builder.Services.AddHttpContextAccessor();
@@ -80,6 +90,12 @@ builder.Services.AddSwaggerGen(options =>
 var jwtSecret = builder.Configuration["Jwt:Secret"];
 if (string.IsNullOrWhiteSpace(jwtSecret) || Encoding.UTF8.GetByteCount(jwtSecret) < 32)
     throw new InvalidOperationException("Jwt:Secret must be configured with at least 32 bytes.");
+var jwtIssuer = builder.Configuration["Jwt:Issuer"];
+if (string.IsNullOrWhiteSpace(jwtIssuer))
+    throw new InvalidOperationException("Jwt:Issuer must be configured.");
+var jwtAudience = builder.Configuration["Jwt:Audience"];
+if (string.IsNullOrWhiteSpace(jwtAudience))
+    throw new InvalidOperationException("Jwt:Audience must be configured.");
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -91,8 +107,8 @@ builder.Services
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
             ClockSkew = TimeSpan.FromSeconds(30)
         };
@@ -101,6 +117,12 @@ builder.Services
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 builder.Services.AddCors(options =>
 {
@@ -167,10 +189,17 @@ builder.Services.AddRateLimiter(options =>
         limiter.Window = TimeSpan.FromMinutes(15);
         limiter.QueueLimit = 0;
     });
+    options.AddFixedWindowLimiter("email-actions", limiter =>
+    {
+        limiter.PermitLimit = 5;
+        limiter.Window = TimeSpan.FromMinutes(5);
+        limiter.QueueLimit = 0;
+    });
 });
 
 var app = builder.Build();
 
+app.UseForwardedHeaders();
 app.UseMiddleware<ExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment())
@@ -253,6 +282,24 @@ if (app.Environment.IsDevelopment() && args.Contains("--seed-volume-test", Strin
     await VolumeTestSeeder.SeedAsync(db);
     Console.WriteLine("Development volume dataset is ready (55 master records/assets/employees and 50 allocations). ");
     return;
+}
+
+if (app.Environment.IsDevelopment())
+{
+    Console.WriteLine("  Local:   http://localhost:5002");
+    try
+    {
+        foreach (var address in Dns.GetHostEntry(Dns.GetHostName()).AddressList
+                     .Where(address => address.AddressFamily == AddressFamily.InterNetwork && !IPAddress.IsLoopback(address))
+                     .Distinct())
+        {
+            Console.WriteLine("  Network: http://{0}:5002", address);
+        }
+    }
+    catch (SocketException)
+    {
+        Console.WriteLine("  Network: http://<this-PC-IP>:5002");
+    }
 }
 
 app.Run();
